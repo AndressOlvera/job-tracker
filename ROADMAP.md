@@ -21,25 +21,25 @@ Cada casilla es una **issue** de GitHub. Cópialas al empezar cada fase (no hace
 - [x] Diseñar la API → [docs/03-api.md](docs/03-api.md)
 - [x] Bocetar las pantallas → [docs/04-pantallas.md](docs/04-pantallas.md)
 - [x] Registrar decisiones de diseño → [docs/05-decisiones.md](docs/05-decisiones.md)
-- [ ] Crear el repositorio en GitHub y subir el primer commit
+- [x] Crear el repositorio en GitHub y subir el primer commit
 
 ## Fase 1 · Backend local
 
-- [ ] **Base de datos local con Docker Compose**
+- [x] **Base de datos local con Docker Compose**
   - Listo cuando: `docker compose up db` levanta PostgreSQL y existe `.env.example` con las variables necesarias.
-- [ ] **Estructura de la app Flask**
+- [x] **Estructura de la app Flask**
   - Listo cuando: existe la app con *application factory*, configuración por entorno (desarrollo, pruebas, producción) y `GET /api/v1/health` responde.
-- [ ] **Modelo `Application` y primera migración**
+- [x] **Modelo `Application` y primera migración**
   - Listo cuando: `flask db upgrade` crea la tabla igual a [docs/02-modelo-de-datos.md](docs/02-modelo-de-datos.md).
-- [ ] **Endpoints CRUD con validación**
+- [x] **Endpoints CRUD con validación**
   - Listo cuando: crear, obtener, modificar y eliminar funcionan con las reglas y el formato de errores de [docs/03-api.md](docs/03-api.md).
-- [ ] **Filtros, búsqueda, orden y paginación**
+- [x] **Filtros, búsqueda, orden y paginación**
   - Listo cuando: `GET /applications` acepta todos los parámetros documentados.
-- [ ] **Endpoint de estadísticas**
+- [x] **Endpoint de estadísticas**
   - Listo cuando: `GET /stats` devuelve los totales y tasas, incluido el caso sin datos.
-- [ ] **Pruebas con pytest**
+- [x] **Pruebas con pytest**
   - Listo cuando: cada endpoint tiene pruebas de éxito y de error, y la cobertura es ≥ 80 %.
-- [ ] **Linter y datos de ejemplo**
+- [x] **Linter y datos de ejemplo**
   - Listo cuando: `ruff check` pasa sin errores y un comando carga postulaciones de ejemplo.
 
 ## Fase 2 · Frontend local

@@ -1,0 +1,33 @@
+# Servicios para desarrollo local.
+# Fase 1: solo la base de datos. En la Fase 3 se agregan la API y el frontend.
+#
+#   docker compose up -d db     -> levanta PostgreSQL en segundo plano
+#   docker compose ps           -> muestra el estado (debe decir "healthy")
+#   docker compose down         -> lo detiene (los datos se conservan)
+#   docker compose down -v      -> lo detiene y BORRA los datos
+
+name: job-tracker
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jobtracker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobtracker}
+      POSTGRES_DB: ${POSTGRES_DB:-jobtracker}
+    ports:
+      # Solo accesible desde tu computadora (127.0.0.1), no desde la red.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Los datos viven en un volumen de Docker y sobreviven a reinicios.
+      - db-data:/var/lib/postgresql/data
+      # Scripts que se ejecutan solo la PRIMERA vez que se crea el volumen.
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db-data:

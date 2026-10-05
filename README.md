@@ -2,7 +2,7 @@
 
 Aplicación web para registrar y dar seguimiento a postulaciones de empleo y prácticas, con estadísticas para medir la efectividad de la búsqueda.
 
-> 🚧 **En construcción.** Fase actual: **0 · Diseño**. Avance en el [roadmap](ROADMAP.md).
+> 🚧 **En construcción.** La API ya funciona en local; fase actual: **2 · Frontend**. Avance en el [roadmap](ROADMAP.md).
 
 ## Funcionalidades (MVP)
 
@@ -43,11 +43,13 @@ El navegador habla con un solo dominio: CloudFront entrega el frontend y redirig
 
 ```
 job-tracker/
-├── backend/             # API en Flask
+├── backend/             # API en Flask (ver su README)
 ├── frontend/            # React + TypeScript
 ├── e2e/                 # Pruebas de navegador con Playwright
 ├── infra/               # Infraestructura en AWS con Terraform
 ├── docs/                # Diseño del proyecto
+├── docker/              # Configuración de los contenedores
+├── docker-compose.yml   # Servicios para desarrollo local
 └── .github/             # Workflows de CI/CD y plantillas
 ```
 
@@ -61,7 +63,19 @@ job-tracker/
 
 ## Cómo correrlo localmente
 
-Disponible a partir de la Fase 3, cuando todo el sistema se levante con `docker compose up`.
+Por ahora está disponible la API: los pasos están en [backend/README.md](backend/README.md). A partir de la Fase 3, todo el sistema se levantará con `docker compose up`.
+
+Resumen de la API (detalle en [docs/03-api.md](docs/03-api.md)):
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/api/v1/health` | Estado de la API y la base de datos |
+| `GET` | `/api/v1/applications` | Lista con filtros, orden y paginación |
+| `POST` | `/api/v1/applications` | Crear una postulación |
+| `GET` | `/api/v1/applications/{id}` | Obtener una postulación |
+| `PATCH` | `/api/v1/applications/{id}` | Modificar algunos campos |
+| `DELETE` | `/api/v1/applications/{id}` | Eliminar |
+| `GET` | `/api/v1/stats` | Estadísticas |
 
 ## Licencia
 

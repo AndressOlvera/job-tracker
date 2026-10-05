@@ -119,3 +119,29 @@ Cuando una decisión cambie, no se borra: se agrega un ADR nuevo que la reemplaz
 **Consecuencias.**
 - ✅ Más simple, y en el MVP no hay necesidad de recuperar registros.
 - ⚠️ No se puede deshacer; por eso la interfaz pide confirmación.
+
+---
+
+## ADR-009: "Hoy" según la zona horaria de la aplicación
+
+**Contexto.** Los servidores y contenedores normalmente usan UTC. A las 8 p. m. en Guadalajara ya es el día siguiente en UTC, así que `date.today()` pondría como fecha de postulación "mañana" y la validación de fechas futuras rechazaría la fecha real del usuario.
+
+**Decisión.** La fecha de hoy se calcula con la zona horaria configurada en `APP_TIMEZONE` (por defecto `America/Mexico_City`), en un solo lugar: `app/clock.py`.
+
+**Consecuencias.**
+- ✅ El valor por defecto y la validación coinciden con el calendario del usuario.
+- ✅ Las pruebas reemplazan `clock.today` por una fecha fija, así dan el mismo resultado cualquier día.
+- ⚠️ Con usuarios en varias zonas horarias habría que recibir la zona desde el frontend. Para el MVP basta con una.
+
+---
+
+## ADR-010: Pruebas contra PostgreSQL real
+
+**Contexto.** Una opción común es probar con SQLite en memoria porque es más rápido de configurar.
+
+**Decisión.** Las pruebas usan una base PostgreSQL separada (`jobtracker_test`), creada con las mismas migraciones que se usan en producción. Antes de cada prueba se vacía la tabla.
+
+**Consecuencias.**
+- ✅ Se prueba lo que de verdad corre en producción: `ILIKE`, `to_char`, las restricciones `CHECK` y las migraciones.
+- ✅ Una prueba detecta si un modelo cambió y falta crear su migración.
+- ⚠️ Para correr las pruebas hay que tener PostgreSQL arriba (`docker compose up -d db`). En CI se usará un contenedor de PostgreSQL.

@@ -1,0 +1,35 @@
+# Configuración de las herramientas de desarrollo.
+# Las dependencias están en requirements.txt y requirements-dev.txt.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Permite que las pruebas importen el paquete `app` desde esta carpeta.
+pythonpath = ["."]
+addopts = "--cov --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+  "E",   # errores de estilo (pycodestyle)
+  "W",   # advertencias de estilo
+  "F",   # errores lógicos (pyflakes): imports sin usar, variables indefinidas...
+  "I",   # orden de imports
+  "B",   # errores comunes (flake8-bugbear)
+  "UP",  # sintaxis moderna de Python
+  "SIM", # simplificaciones
+  "C4",  # comprensiones de listas y diccionarios
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

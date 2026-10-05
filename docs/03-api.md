@@ -90,7 +90,13 @@ Valores por defecto: `sort=-applied_on`, `page=1`, `per_page=20`.
 }
 ```
 
-Una página fuera de rango devuelve `items` vacío, no un error.
+Una página fuera de rango devuelve `items` vacío, no un error. Sin resultados, `total` y `pages` valen `0`.
+
+Otras reglas:
+- `q` admite hasta 100 caracteres. Los caracteres `%` y `_` se buscan como texto literal.
+- Un parámetro vacío (`?status=`) equivale a no enviarlo; los parámetros desconocidos se ignoran.
+- `applied_from` no puede ser posterior a `applied_to`.
+- Al ordenar por `company` no se distinguen mayúsculas. Cuando hay empates, se desempata por `id` en la misma dirección.
 
 ---
 
@@ -103,12 +109,14 @@ Una página fuera de rango devuelve `items` vacío, no un error.
 | `company` | Sí | 1–120 caracteres, se recortan espacios |
 | `position` | Sí | 1–120 caracteres, se recortan espacios |
 | `status` | No | `applied` (por defecto), `interview`, `offer`, `rejected` |
-| `applied_on` | No | Hoy por defecto; no puede ser futura |
+| `applied_on` | No | `AAAA-MM-DD`. Hoy por defecto (en la zona horaria `APP_TIMEZONE`); no puede ser futura |
 | `job_url` | No | URL `http(s)`, máximo 500 caracteres |
 | `source` | No | Máximo 60 caracteres |
 | `notes` | No | Máximo 5000 caracteres |
 
-Los campos `id`, `created_at` y `updated_at` los asigna el servidor; si se envían, se rechazan.
+Los campos `id`, `created_at` y `updated_at` los asigna el servidor; si se envían, se rechazan, igual que cualquier campo desconocido.
+
+Los campos opcionales enviados vacíos (`""` o solo espacios) se guardan como `null`.
 
 ```json
 {
@@ -205,4 +213,4 @@ Todos los errores tienen el mismo formato:
 | `500` | `internal_error` | Error inesperado; nunca se exponen detalles internos |
 | `503` | — | Solo en `/health`, cuando la base de datos no responde |
 
-`details` solo aparece en errores de validación.
+`details` solo aparece en errores de validación. Sus llaves son los nombres de los campos o parámetros; los errores que afectan a todo el cuerpo (por ejemplo, un `PATCH` vacío) aparecen bajo la llave `body`. Los mensajes están en español para que la interfaz los muestre tal cual.
