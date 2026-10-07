@@ -44,20 +44,20 @@ Cada casilla es una **issue** de GitHub. Cópialas al empezar cada fase (no hace
 
 ## Fase 2 · Frontend local
 
-- [ ] **Proyecto React + TypeScript con Vite**
+- [x] **Proyecto React + TypeScript con Vite**
   - Listo cuando: el proyecto arranca, ESLint y Prettier están configurados y el proxy de `/api` llega a Flask.
-- [ ] **Cliente de la API con tipos**
+- [x] **Cliente de la API con tipos**
   - Listo cuando: existen tipos de TypeScript para `Application`, filtros y estadísticas, y funciones para cada endpoint.
-- [ ] **Pantalla de lista** (HU-02, HU-03, HU-07)
+- [x] **Pantalla de lista** (HU-02, HU-03, HU-07)
   - Listo cuando: muestra la tabla con filtros en la URL, orden, paginación y estados de carga, vacío y error.
-- [ ] **Formulario de crear y editar** (HU-01, HU-04)
+- [x] **Formulario de crear y editar** (HU-01, HU-04)
   - Listo cuando: valida en el navegador, muestra los errores `422` de la API por campo y evita envíos dobles.
-- [ ] **Eliminar con confirmación** (HU-05)
-- [ ] **Pantalla de estadísticas** (HU-06)
-  - Listo cuando: muestra las tarjetas y las dos gráficas con Recharts, incluido el caso sin datos.
-- [ ] **Pruebas con Vitest y React Testing Library**
+- [x] **Eliminar con confirmación** (HU-05)
+- [x] **Pantalla de estadísticas** (HU-06)
+  - Listo cuando: muestra las cifras y las dos gráficas, incluido el caso sin datos. Las gráficas se hicieron sin Recharts ([ADR-011](docs/05-decisiones.md#adr-011-gráficas-propias-en-lugar-de-recharts)).
+- [x] **Pruebas con Vitest y React Testing Library**
   - Listo cuando: el formulario, los filtros y la confirmación de borrado tienen pruebas.
-- [ ] **Diseño responsive y accesible**
+- [x] **Diseño responsive y accesible**
   - Listo cuando: funciona en pantalla de celular y se puede usar completo con teclado.
 
 ## Fase 3 · Docker

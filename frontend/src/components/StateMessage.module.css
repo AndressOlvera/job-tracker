@@ -1,0 +1,27 @@
+.box {
+  padding: 2.5rem 1.5rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  text-align: center;
+}
+
+.box[data-tone='error'] {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  background: var(--danger-wash);
+}
+
+.title {
+  font-size: 1.125rem;
+}
+
+.body {
+  max-width: 36rem;
+  margin: 0.5rem auto 0;
+  color: var(--text-muted);
+}
+
+.action {
+  margin-top: 1.25rem;
+}

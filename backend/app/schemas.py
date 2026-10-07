@@ -4,16 +4,17 @@ Las reglas siguen docs/03-api.md. Los mensajes de error se traducen al español 
 ``app/validation.py``.
 """
 
+import re
 from datetime import UTC, date, datetime
 from typing import Annotated, Any, Literal
 
 from pydantic import (
     AfterValidator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     HttpUrl,
-    Strict,
     TypeAdapter,
     ValidationError,
     ValidationInfo,
@@ -26,6 +27,7 @@ from pydantic_core import PydanticCustomError
 from app.models import Status
 
 _HTTP_URL = TypeAdapter(HttpUrl)
+_ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 def _check_http_url(value: str) -> str:
@@ -39,13 +41,25 @@ def _check_http_url(value: str) -> str:
     return value
 
 
+def _require_iso_date(value: Any) -> Any:
+    """Exige el texto "AAAA-MM-DD".
+
+    Sin esta revisión, Pydantic aceptaría también un número (por ejemplo 20260901)
+    y lo interpretaría como una marca de tiempo. Se hace con un validador y no con
+    `Strict()` porque el modo estricto rechaza el texto cuando el campo tiene
+    además otro validador "before" (como pasa en ApplicationUpdate).
+    """
+    if isinstance(value, date) or (isinstance(value, str) and _ISO_DATE.fullmatch(value)):
+        return value
+    raise PydanticCustomError("date_parsing", "Debe ser una fecha con formato AAAA-MM-DD.")
+
+
 # Tipos reutilizables con sus reglas
 RequiredText = Annotated[str, Field(min_length=1, max_length=120)]
 JobUrl = Annotated[str, Field(max_length=500), AfterValidator(_check_http_url)]
 Source = Annotated[str, Field(max_length=60)]
 Notes = Annotated[str, Field(max_length=5000)]
-# En el cuerpo JSON la fecha debe venir como texto "AAAA-MM-DD" (no como número).
-JsonDate = Annotated[date, Strict()]
+IsoDate = Annotated[date, BeforeValidator(_require_iso_date)]
 
 OPTIONAL_TEXT_FIELDS = ("job_url", "source", "notes")
 NON_NULLABLE_FIELDS = ("company", "position", "status", "applied_on")
@@ -82,7 +96,7 @@ class ApplicationCreate(_ApplicationInput):
     company: RequiredText
     position: RequiredText
     status: Status = Status.APPLIED
-    applied_on: JsonDate | None = None  # Si no se envía, se usa la fecha de hoy.
+    applied_on: IsoDate | None = None  # Si no se envía, se usa la fecha de hoy.
     job_url: JobUrl | None = None
     source: Source | None = None
     notes: Notes | None = None
@@ -94,7 +108,7 @@ class ApplicationUpdate(_ApplicationInput):
     company: RequiredText | None = None
     position: RequiredText | None = None
     status: Status | None = None
-    applied_on: JsonDate | None = None
+    applied_on: IsoDate | None = None
     job_url: JobUrl | None = None
     source: Source | None = None
     notes: Notes | None = None
@@ -138,8 +152,8 @@ class ApplicationListParams(BaseModel):
 
     status: Status | None = None
     q: Annotated[str, Field(max_length=100)] | None = None
-    applied_from: date | None = None
-    applied_to: date | None = None
+    applied_from: IsoDate | None = None
+    applied_to: IsoDate | None = None
     sort: SortOption = "-applied_on"
     page: int = Field(default=1, ge=1)
     per_page: int = Field(default=20, ge=1, le=100)

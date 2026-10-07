@@ -43,6 +43,36 @@ def test_required_fields_cannot_be_null(client, make_application, field):
     assert response.get_json()["error"]["details"] == {field: ["Este campo no puede ser nulo."]}
 
 
+def test_updates_every_field_at_once(client, make_application, fixed_today):
+    """Así edita el formulario del frontend: envía todos los campos juntos."""
+    application_id = make_application()
+    payload = {
+        "company": "Oracle",
+        "position": "Becario de Datos",
+        "status": "offer",
+        "applied_on": fixed_today.isoformat(),
+        "job_url": "https://example.com/vacante",
+        "source": "OCC",
+        "notes": None,
+    }
+
+    response = client.patch(f"{URL}/{application_id}", json=payload)
+
+    assert response.status_code == 200
+    body = response.get_json()
+    for field, value in payload.items():
+        assert body[field] == value
+
+
+def test_updates_the_date(client, make_application):
+    application_id = make_application()
+
+    response = client.patch(f"{URL}/{application_id}", json={"applied_on": "2026-09-01"})
+
+    assert response.status_code == 200
+    assert response.get_json()["applied_on"] == "2026-09-01"
+
+
 def test_applies_same_rules_as_create(client, make_application):
     application_id = make_application()
 
@@ -52,7 +82,23 @@ def test_applies_same_rules_as_create(client, make_application):
     )
 
     assert response.status_code == 422
-    assert set(response.get_json()["error"]["details"]) == {"company", "applied_on", "status"}
+    assert response.get_json()["error"]["details"] == {
+        "company": ["No puede estar vacío."],
+        "applied_on": ["La fecha no puede ser futura."],
+        "status": ["Valor no válido. Opciones: applied, interview, offer, rejected."],
+    }
+
+
+@pytest.mark.parametrize("value", [20260901, "01/09/2026"])
+def test_update_rejects_dates_in_other_formats(client, make_application, value):
+    application_id = make_application()
+
+    response = client.patch(f"{URL}/{application_id}", json={"applied_on": value})
+
+    assert response.status_code == 422
+    assert response.get_json()["error"]["details"] == {
+        "applied_on": ["Debe ser una fecha con formato AAAA-MM-DD."]
+    }
 
 
 def test_rejects_empty_body(client, make_application):

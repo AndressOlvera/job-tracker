@@ -1,0 +1,110 @@
+.skipLink {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 30;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+  transform: translateY(-150%);
+}
+
+.skipLink:focus {
+  transform: none;
+  color: #fff;
+}
+
+.header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 0;
+  color: var(--text);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.brand:hover {
+  color: var(--ink);
+}
+
+/* Un sello: cuadro de tinta con un marco interior. */
+.mark {
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 5px;
+  background: var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--ink),
+    inset 0 0 0 4.5px #fff;
+}
+
+.nav {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navLink {
+  display: block;
+  padding: 1.05rem 0.75rem 0.9rem;
+  border-bottom: 3px solid transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.navLink:hover {
+  color: var(--text);
+}
+
+.navLink[aria-current='page'] {
+  border-bottom-color: var(--ink);
+  color: var(--text);
+}
+
+.main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2.25rem 1.25rem 4rem;
+}
+
+.main:focus {
+  outline: none;
+}
+
+@media (max-width: 40rem) {
+  .bar {
+    padding: 0 1rem;
+  }
+
+  .navLink {
+    padding: 0.6rem 0.6rem 0.5rem;
+  }
+
+  .main {
+    padding: 1.5rem 1rem 3rem;
+  }
+}

@@ -2,7 +2,7 @@
 
 Aplicación web para registrar y dar seguimiento a postulaciones de empleo y prácticas, con estadísticas para medir la efectividad de la búsqueda.
 
-> 🚧 **En construcción.** La API ya funciona en local; fase actual: **2 · Frontend**. Avance en el [roadmap](ROADMAP.md).
+> 🚧 **En construcción.** La API y la interfaz ya funcionan en local; fase actual: **3 · Docker**. Avance en el [roadmap](ROADMAP.md).
 
 ## Funcionalidades (MVP)
 
@@ -15,11 +15,11 @@ Aplicación web para registrar y dar seguimiento a postulaciones de empleo y pr�
 
 | Capa | Tecnologías |
 |---|---|
-| Frontend | React, TypeScript, Vite, Recharts |
+| Frontend | React, TypeScript, Vite, React Router, TanStack Query, CSS Modules |
 | Backend | Python, Flask, SQLAlchemy, Alembic, Pydantic, Gunicorn |
 | Base de datos | PostgreSQL |
 | Pruebas | pytest, Vitest, React Testing Library, Playwright |
-| Calidad | Ruff, ESLint, SonarQube Cloud |
+| Calidad | Ruff, ESLint, Prettier, SonarQube Cloud |
 | Contenedores | Docker, Docker Compose |
 | CI/CD | GitHub Actions (OIDC hacia AWS) |
 | Infraestructura | Terraform, AWS (CloudFront, S3, EC2, RDS, ECR, SSM) |
@@ -44,7 +44,7 @@ El navegador habla con un solo dominio: CloudFront entrega el frontend y redirig
 ```
 job-tracker/
 ├── backend/             # API en Flask (ver su README)
-├── frontend/            # React + TypeScript
+├── frontend/            # Interfaz en React + TypeScript (ver su README)
 ├── e2e/                 # Pruebas de navegador con Playwright
 ├── infra/               # Infraestructura en AWS con Terraform
 ├── docs/                # Diseño del proyecto
@@ -63,7 +63,12 @@ job-tracker/
 
 ## Cómo correrlo localmente
 
-Por ahora está disponible la API: los pasos están en [backend/README.md](backend/README.md). A partir de la Fase 3, todo el sistema se levantará con `docker compose up`.
+Por ahora se levanta en dos partes, cada una en su terminal de Ubuntu:
+
+1. **API:** base de datos con `docker compose up -d db` y Flask con `flask run` (pasos completos en [backend/README.md](backend/README.md)).
+2. **Interfaz:** `npm install` y `npm run dev` dentro de `frontend/`, y abre `http://localhost:5173` (pasos completos en [frontend/README.md](frontend/README.md)).
+
+En desarrollo, Vite reenvía `/api` a Flask, así que el navegador habla con un solo origen y no hace falta CORS. A partir de la Fase 3, todo el sistema se levantará con `docker compose up`.
 
 Resumen de la API (detalle en [docs/03-api.md](docs/03-api.md)):
 
