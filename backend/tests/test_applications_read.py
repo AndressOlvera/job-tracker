@@ -196,6 +196,7 @@ def test_blank_parameters_are_ignored(client, make_application):
         ("page=abc", "page"),
         ("per_page=101", "per_page"),
         ("applied_from=ayer", "applied_from"),
+        ("applied_from=20260901", "applied_from"),
         ("applied_from=2026-09-30&applied_to=2026-09-01", "applied_to"),
         ("q=" + "x" * 101, "q"),
     ],

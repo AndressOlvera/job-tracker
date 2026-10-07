@@ -1,0 +1,195 @@
+.wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  transition: opacity 160ms ease;
+}
+
+.wrap[data-refreshing='true'] {
+  opacity: 0.55;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.table th {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tbody tr:hover {
+  background: #fafafc;
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: -0.25rem -0.4rem;
+  padding: 0.25rem 0.4rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sortButton:hover {
+  background: var(--ink-wash);
+  color: var(--ink);
+}
+
+th[aria-sort='ascending'] .sortButton,
+th[aria-sort='descending'] .sortButton {
+  color: var(--text);
+}
+
+.company {
+  font-weight: 700;
+}
+
+.position {
+  color: var(--text);
+}
+
+.date {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.source {
+  color: var(--text-muted);
+}
+
+.actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.delete:hover:not(:disabled) {
+  background: var(--danger-wash);
+  color: var(--danger);
+}
+
+.skeleton {
+  padding: 0.5rem 1rem;
+}
+
+.skeletonRow {
+  display: grid;
+  grid-template-columns: 2fr 3fr 1.2fr 1.2fr;
+  gap: 1.5rem;
+  padding: 0.95rem 0;
+}
+
+.skeletonRow + .skeletonRow {
+  border-top: 1px solid var(--hairline);
+}
+
+.skeletonRow span {
+  height: 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--hairline);
+}
+
+/* En pantallas angostas cada fila se vuelve una tarjeta con etiquetas. */
+@media (max-width: 48rem) {
+  .wrap {
+    border: 0;
+    background: none;
+  }
+
+  .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .table tbody {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .table tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.35rem 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .table tbody tr:hover {
+    background: var(--surface);
+  }
+
+  .table td {
+    padding: 0;
+    border: 0;
+  }
+
+  .company {
+    grid-column: 1;
+    font-size: 1.0625rem;
+  }
+
+  .status {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .position {
+    grid-column: 1 / -1;
+  }
+
+  .date,
+  .source {
+    grid-column: 1 / -1;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  .date::before,
+  .source::before {
+    content: attr(data-label) ': ';
+    font-variant-numeric: normal;
+    font-weight: 600;
+  }
+
+  .table .actions {
+    grid-column: 1 / -1;
+    width: auto;
+    margin-top: 0.35rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--hairline);
+    text-align: left;
+  }
+
+  .skeletonRow {
+    grid-template-columns: 1fr 1fr;
+  }
+}

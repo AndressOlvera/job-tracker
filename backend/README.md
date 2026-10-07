@@ -59,13 +59,13 @@ También puedes abrir las rutas `GET` directo en el navegador.
 ## Pruebas y calidad
 
 ```bash
-pytest                 # corre todas las pruebas y muestra la cobertura
-pytest -k stats        # solo las pruebas cuyo nombre contiene "stats"
-ruff check .           # busca errores y malas prácticas
-ruff format .          # da formato al código
+pytest                     # corre todas las pruebas y muestra la cobertura
+pytest -k stats --no-cov   # solo las pruebas cuyo nombre contiene "stats" (sin medir cobertura)
+ruff check .               # busca errores y malas prácticas
+ruff format .              # da formato al código
 ```
 
-Las pruebas usan la base `jobtracker_test`, separada de la de desarrollo, así que no borran tus datos. La base de datos debe estar arriba (`docker compose up -d db`). Si la cobertura baja de 80 %, `pytest` falla.
+Las pruebas usan la base `jobtracker_test`, separada de la de desarrollo, así que no borran tus datos. La base de datos debe estar arriba (`docker compose up -d db`). Si la cobertura baja de 80 %, `pytest` falla. Por eso, al correr solo una parte de las pruebas se agrega `--no-cov`: unas cuantas pruebas nunca cubren el 80 % del código y `pytest` marcaría un fallo aunque todas pasen.
 
 ## Estructura
 

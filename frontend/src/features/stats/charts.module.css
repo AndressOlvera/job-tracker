@@ -1,0 +1,193 @@
+/* Gráficas hechas con HTML y CSS. Reglas: barras delgadas (máx. 24 px) con la
+   punta redondeada y la base recta, líneas guía finas y grises, y el texto
+   siempre en color de texto: el color de la marca solo identifica. */
+
+[data-status='applied'] {
+  --status-color: var(--status-applied);
+}
+
+[data-status='interview'] {
+  --status-color: var(--status-interview);
+}
+
+[data-status='offer'] {
+  --status-color: var(--status-offer);
+}
+
+[data-status='rejected'] {
+  --status-color: var(--status-rejected);
+}
+
+.tooltip,
+.columnTooltip {
+  position: absolute;
+  z-index: 2;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius);
+  background: var(--text);
+  color: #fff;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.tooltip strong,
+.columnTooltip strong {
+  font-weight: 700;
+}
+
+/* ---------- Barras por estado ---------- */
+
+.bars {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 6.25rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.2rem 0;
+  border-radius: var(--radius-sm);
+}
+
+.barRow:focus-visible {
+  outline-offset: 3px;
+}
+
+.barLabel {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.barTrack {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 1.75rem;
+  padding-right: 2.5rem;
+}
+
+.bar {
+  flex: none;
+  min-width: 2px;
+  height: 1.25rem;
+  border-radius: 0 4px 4px 0;
+  background: var(--status-color);
+}
+
+.bar[data-active='true'],
+.column[data-active='true'] {
+  filter: brightness(1.12) saturate(1.1);
+}
+
+.barValue {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip {
+  bottom: calc(100% + 0.35rem);
+  transform: translateX(-50%);
+}
+
+/* ---------- Columnas por mes ---------- */
+
+.columnsChart {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.75rem 0 0 2rem;
+}
+
+.plot {
+  position: relative;
+  height: 11rem;
+}
+
+.gridline {
+  position: absolute;
+  right: 0;
+  left: 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.tickLabel {
+  position: absolute;
+  top: -0.6rem;
+  right: calc(100% + 0.5rem);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.columns,
+.axis {
+  display: flex;
+  gap: 2px;
+}
+
+.columns {
+  position: absolute;
+  inset: 0;
+  align-items: flex-end;
+}
+
+.columnSlot {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  border-radius: var(--radius-sm);
+}
+
+.columnSlot:hover,
+.columnSlot:focus-visible {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+.column {
+  position: relative;
+  width: 100%;
+  max-width: 1.5rem;
+  border-radius: 4px 4px 0 0;
+  background: var(--ink);
+}
+
+.columnValue {
+  position: absolute;
+  bottom: calc(100% + 0.25rem);
+  left: 50%;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transform: translateX(-50%);
+}
+
+.columnTooltip {
+  display: grid;
+  left: 50%;
+  transform: translate(-50%, -1.75rem);
+}
+
+.columnTooltip span {
+  color: #cfd0d8;
+}
+
+.axisLabel {
+  flex: 1 1 0;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.axisYear {
+  display: block;
+  font-size: 0.75rem;
+}

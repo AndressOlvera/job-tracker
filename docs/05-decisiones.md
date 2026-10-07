@@ -145,3 +145,52 @@ Cuando una decisión cambie, no se borra: se agrega un ADR nuevo que la reemplaz
 - ✅ Se prueba lo que de verdad corre en producción: `ILIKE`, `to_char`, las restricciones `CHECK` y las migraciones.
 - ✅ Una prueba detecta si un modelo cambió y falta crear su migración.
 - ⚠️ Para correr las pruebas hay que tener PostgreSQL arriba (`docker compose up -d db`). En CI se usará un contenedor de PostgreSQL.
+
+---
+
+## ADR-011: Gráficas propias en lugar de Recharts
+
+**Contexto.** El plan original usaba Recharts para la pantalla de estadísticas. Solo hay dos gráficas y las dos son sencillas: barras horizontales por estado y columnas por mes. Recharts es una librería grande pensada para gráficas mucho más complejas.
+
+**Decisión.** Las gráficas se dibujan con HTML y CSS (`features/stats/`): cada barra es un elemento con su ancho o alto en porcentaje. Los cálculos (rellenar con 0 los meses sin postulaciones, elegir el tope del eje) viven en `chartData.ts`, separados del dibujo y con sus propias pruebas.
+
+**Consecuencias.**
+- ✅ Una dependencia menos que mantener y menos JavaScript que descargar.
+- ✅ Control total del diseño: barras delgadas, etiquetas solo donde ayudan, detalle al pasar el mouse o al llegar con el teclado.
+- ✅ Accesibles sin trabajo extra: cada barra es un elemento de lista con texto ("Postulado: 15 postulaciones, 62.5 % del total") y cada gráfica tiene una tabla con los datos.
+- ✅ Se prueban como el resto de la app, con React Testing Library.
+- ⚠️ Si después hacen falta gráficas complejas (líneas con muchos puntos, zoom, ejes de tiempo continuos), conviene volver a una librería como Recharts.
+
+---
+
+## ADR-012: TanStack Query para los datos de la API
+
+**Contexto.** Las tres pantallas piden datos a la API. En cada una hay que manejar la carga, los errores y los reintentos; cancelar la petición anterior cuando cambia un filtro, y volver a pedir la lista y las estadísticas después de crear, editar o eliminar. Hacerlo a mano con `useEffect` y `useState` repite código en cada pantalla y es una fuente común de errores, como mostrar una respuesta vieja que llegó tarde.
+
+**Decisión.** Los datos que vienen de la API se manejan con **TanStack Query** (`src/api/queries.ts`). Lo que solo existe en la pantalla, como lo que se escribe en el formulario o si el diálogo está abierto, se queda en `useState`. No se usa una librería de estado global como Redux.
+
+**Consecuencias.**
+- ✅ Cada combinación de filtros se guarda en caché: regresar a una página ya vista es instantáneo.
+- ✅ Al cambiar de filtro se cancela la petición anterior y se sigue mostrando la lista actual hasta que llega la nueva, sin parpadeos.
+- ✅ Después de guardar o eliminar se invalidan las llaves `applications` y `stats`, y todo se actualiza solo.
+- ✅ Los errores `4xx` (como un `404`) no se reintentan; los de red o `5xx` sí, hasta dos veces.
+- ⚠️ Es una dependencia más, con conceptos propios (llaves de consulta, invalidación).
+- ⚠️ Cada prueba crea su propio `QueryClient` sin reintentos, para que una prueba no herede la caché de otra.
+
+---
+
+## ADR-013: Los filtros de la lista viven en la URL
+
+**Contexto.** La lista tiene búsqueda, filtro por estado, rango de fechas, orden y paginación. Si esos valores solo existieran en la memoria de la página, se perderían al recargar, al compartir el enlace o al regresar desde el formulario de edición.
+
+**Decisión.** La URL es la única fuente de los filtros (`/?status=interview&q=oracle&page=2`), leída con `useSearchParams` de React Router.
+- `filters.ts` convierte la URL en filtros válidos: lo que no tenga sentido (un estado que no existe, una fecha mal escrita, una página negativa) se ignora en lugar de romper la pantalla.
+- Los valores por defecto no se escriben, así la URL queda limpia.
+- Cualquier cambio de filtro regresa a la página 1.
+- La búsqueda se aplica 300 ms después de dejar de escribir y reemplaza la entrada del historial, para no crear una por cada letra.
+- Al abrir el formulario se guarda la URL de la lista, y al terminar se regresa a ella con los mismos filtros.
+
+**Consecuencias.**
+- ✅ Recargar, compartir el enlace y los botones atrás/adelante del navegador funcionan como se espera.
+- ✅ Las pruebas pueden empezar en cualquier estado de la lista con solo indicar una URL.
+- ⚠️ Cualquiera puede escribir la URL a mano, así que todo lo que llega por ahí se valida antes de usarlo.
