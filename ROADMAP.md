@@ -62,12 +62,13 @@ Cada casilla es una **issue** de GitHub. Cópialas al empezar cada fase (no hace
 
 ## Fase 3 · Docker
 
-- [ ] **Dockerfile de la API**
+- [x] **Dockerfile de la API**
   - Listo cuando: la imagen usa Gunicorn, corre con un usuario sin privilegios y tiene *healthcheck*.
-- [ ] **Dockerfile del frontend**
+- [x] **Dockerfile del frontend**
   - Listo cuando: compila la app y la sirve con Nginx, que además redirige `/api` a la API.
-- [ ] **Docker Compose completo**
+- [x] **Docker Compose completo**
   - Listo cuando: `docker compose up` levanta base de datos, API y frontend, y aplica las migraciones al iniciar.
+  - Guía: [docs/06-docker.md](docs/06-docker.md). Decisiones: ADR-014 y ADR-015.
 
 ## Fase 4 · CI y calidad
 
@@ -79,6 +80,7 @@ Cada casilla es una **issue** de GitHub. Cópialas al empezar cada fase (no hace
   - Listo cuando: cada pull request se analiza y el Quality Gate aparece en GitHub.
 - [ ] **Pruebas de navegador con Playwright**
   - Listo cuando: el flujo crear → editar → filtrar → eliminar corre en CI sobre Docker Compose.
+  - Ojo: el navegador de prueba debe usar la zona horaria `America/Mexico_City` (la misma que `APP_TIMEZONE`). Si usa UTC, de 6 p. m. a medianoche la fecha por defecto del formulario sería "mañana" para la API y la rechazaría.
 - [ ] **Protección de `main` e insignias**
   - Listo cuando: no se puede unir un pull request con checks fallidos y el README muestra el estado de CI y del Quality Gate.
 

@@ -81,6 +81,8 @@ frontend/
 ├── index.html               # página base; Vite inyecta aquí la app
 ├── vite.config.ts           # proxy de /api y configuración de Vitest
 ├── eslint.config.js         # reglas de ESLint
+├── Dockerfile               # imagen de Docker: compila con Node y sirve con Nginx
+├── nginx/                   # configuración de Nginx dentro de Docker
 ├── public/                  # archivos que se sirven tal cual (ícono y tipografía)
 └── src/
     ├── main.tsx             # punto de entrada: monta la app con sus proveedores
@@ -105,6 +107,12 @@ Así funciona guardar una postulación nueva:
 2. **`useCreateApplication`** (`api/queries.ts`) manda el `POST` mediante `api/applications.ts` → `api/client.ts`.
 3. Si la API responde `422`, los errores se muestran en sus campos. Si responde `201`, TanStack Query marca como viejas la lista y las estadísticas para que se vuelvan a pedir.
 4. La app regresa a la lista (con los filtros que tenías) y muestra el aviso "Postulación guardada".
+
+## En Docker
+
+En Docker, el frontend no usa el servidor de Vite. La imagen hace `npm run build` y sirve los archivos resultantes con **Nginx** en `http://localhost:8080` (`docker compose up -d` desde la raíz; guía en [docs/06-docker.md](../docs/06-docker.md)).
+
+Nginx cumple el mismo papel que el proxy de Vite: reenvía `/api` a la API, así que el código del frontend es el mismo en los dos modos. Además, responde `index.html` en las rutas de la app (`/stats`, `/applications/3/edit`), guarda en caché los archivos con hash, comprime las respuestas y agrega cabeceras de seguridad. Todo eso está en `nginx/default.conf.template`.
 
 ## Decisiones principales
 

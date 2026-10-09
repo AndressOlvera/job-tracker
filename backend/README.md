@@ -84,7 +84,9 @@ backend/
 │   ├── api/               # rutas HTTP (una por archivo de recurso)
 │   └── services/          # lógica y consultas a la base de datos
 ├── migrations/            # historial de cambios de la base de datos (Alembic)
-└── tests/                 # pruebas con pytest
+├── tests/                 # pruebas con pytest
+├── Dockerfile             # imagen de Docker de la API
+└── gunicorn.conf.py       # configuración de Gunicorn, el servidor en Docker y AWS
 ```
 
 ### Recorrido de una petición
@@ -98,6 +100,15 @@ Así viaja `POST /api/v1/applications`:
 5. **Esquema de salida** (`ApplicationOut`) convierte el registro en JSON y la ruta responde `201`.
 
 Las rutas solo se encargan de HTTP; la lógica vive en los servicios. Así cada parte es más fácil de entender, cambiar y probar.
+
+## En Docker
+
+La API también corre en Docker junto con el resto de la app (`docker compose up -d` desde la raíz; guía en [docs/06-docker.md](../docs/06-docker.md)). Las diferencias con `flask run`:
+
+- La sirve **Gunicorn** con 2 procesos. El servidor de `flask run` es solo para desarrollo: no está hecho para ser eficiente, estable ni seguro con tráfico real.
+- Corre con `APP_ENV=production` y se conecta a la base por el nombre del servicio (`db:5432`), no por `localhost`.
+- Las migraciones las aplica antes el servicio `migrate`; no hace falta correr `flask db upgrade` a mano.
+- Para usar un comando de `flask` dentro del contenedor: `docker compose exec api flask seed`.
 
 ## Cambiar la base de datos
 

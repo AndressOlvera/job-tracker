@@ -2,7 +2,7 @@
 
 Aplicación web para registrar y dar seguimiento a postulaciones de empleo y prácticas, con estadísticas para medir la efectividad de la búsqueda.
 
-> 🚧 **En construcción.** La API y la interfaz ya funcionan en local; fase actual: **3 · Docker**. Avance en el [roadmap](ROADMAP.md).
+> 🚧 **En construcción.** La aplicación completa ya corre en Docker; fase actual: **4 · CI y calidad**. Avance en el [roadmap](ROADMAP.md).
 
 ## Funcionalidades (MVP)
 
@@ -20,7 +20,7 @@ Aplicación web para registrar y dar seguimiento a postulaciones de empleo y pr�
 | Base de datos | PostgreSQL |
 | Pruebas | pytest, Vitest, React Testing Library, Playwright |
 | Calidad | Ruff, ESLint, Prettier, SonarQube Cloud |
-| Contenedores | Docker, Docker Compose |
+| Contenedores | Docker, Docker Compose, Nginx |
 | CI/CD | GitHub Actions (OIDC hacia AWS) |
 | Infraestructura | Terraform, AWS (CloudFront, S3, EC2, RDS, ECR, SSM) |
 
@@ -48,8 +48,8 @@ job-tracker/
 ├── e2e/                 # Pruebas de navegador con Playwright
 ├── infra/               # Infraestructura en AWS con Terraform
 ├── docs/                # Diseño del proyecto
-├── docker/              # Configuración de los contenedores
-├── docker-compose.yml   # Servicios para desarrollo local
+├── docker/              # Scripts de arranque de la base de datos
+├── docker-compose.yml   # Toda la app en Docker: base de datos, API y frontend
 └── .github/             # Workflows de CI/CD y plantillas
 ```
 
@@ -60,15 +60,23 @@ job-tracker/
 3. [API REST](docs/03-api.md)
 4. [Pantallas](docs/04-pantallas.md)
 5. [Decisiones de diseño (ADR)](docs/05-decisiones.md)
+6. [Docker](docs/06-docker.md)
 
 ## Cómo correrlo localmente
 
-Por ahora se levanta en dos partes, cada una en su terminal de Ubuntu:
+Solo necesitas Docker Desktop:
 
-1. **API:** base de datos con `docker compose up -d db` y Flask con `flask run` (pasos completos en [backend/README.md](backend/README.md)).
-2. **Interfaz:** `npm install` y `npm run dev` dentro de `frontend/`, y abre `http://localhost:5173` (pasos completos en [frontend/README.md](frontend/README.md)).
+```bash
+cp .env.example .env
+docker compose up -d                 # base de datos, migraciones, API y frontend
+docker compose exec api flask seed   # opcional: 30 postulaciones de ejemplo
+```
 
-En desarrollo, Vite reenvía `/api` a Flask, así que el navegador habla con un solo origen y no hace falta CORS. A partir de la Fase 3, todo el sistema se levantará con `docker compose up`.
+Abre `http://localhost:8080`. La guía completa, con los comandos para ver logs, apagar y resolver problemas, está en [docs/06-docker.md](docs/06-docker.md).
+
+Para programar con recarga automática al guardar, se usa el modo desarrollo: la base en Docker (`docker compose up -d db`), la API con `flask run` y el frontend con `npm run dev` (pasos en [backend/README.md](backend/README.md) y [frontend/README.md](frontend/README.md)).
+
+En los dos modos el navegador habla con un solo origen: Nginx (en Docker) o Vite (en desarrollo) reenvían `/api` a la API, así que no hace falta CORS.
 
 Resumen de la API (detalle en [docs/03-api.md](docs/03-api.md)):
 
