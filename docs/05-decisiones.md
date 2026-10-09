@@ -194,3 +194,37 @@ Cuando una decisión cambie, no se borra: se agrega un ADR nuevo que la reemplaz
 - ✅ Recargar, compartir el enlace y los botones atrás/adelante del navegador funcionan como se espera.
 - ✅ Las pruebas pueden empezar en cualquier estado de la lista con solo indicar una URL.
 - ⚠️ Cualquiera puede escribir la URL a mano, así que todo lo que llega por ahí se valida antes de usarlo.
+
+---
+
+## ADR-014: Imágenes de Docker pequeñas y sin privilegios
+
+**Contexto.** En la Fase 3 la API y el frontend se empaquetan como imágenes de Docker. Las mismas imágenes se usarán en la CI y en AWS, así que conviene que sean seguras, ligeras y reproducibles desde el principio.
+
+**Decisión.**
+- **API:** `python:3.13-slim` con **Gunicorn** como servidor (2 procesos), en lugar de `flask run`, que es solo para desarrollo.
+- **Frontend:** construcción en dos etapas. `node:24-alpine` compila la app y `nginxinc/nginx-unprivileged:1.30-alpine` sirve el resultado. Node y `node_modules` no llegan a la imagen final.
+- **Sin root:** la API corre como un usuario propio (`app`, UID 10001) y Nginx como el usuario sin privilegios de su imagen. El código queda a nombre de root, así que la aplicación puede leerlo pero no modificarlo.
+- **Healthchecks** en las dos imágenes: la API revisa `GET /api/v1/health` (que también prueba la base de datos) y Nginx responde en `/healthz`.
+- **Versiones fijas:** la versión menor de cada imagen base (`3.13`, `24`, `1.30`) y la versión exacta de cada paquete de Python y de npm (con `package-lock.json` y `npm ci`).
+- `.dockerignore` en cada carpeta, para que `.env`, `.venv`, `node_modules` y las pruebas nunca entren a una imagen.
+
+**Consecuencias.**
+- ✅ Si alguien lograra ejecutar código a través de la API o de Nginx, no tendría permisos de administrador dentro del contenedor.
+- ✅ Docker Compose (y más adelante AWS) sabe cuándo un servicio está listo de verdad, no solo encendido.
+- ✅ La imagen del frontend pesa decenas de MB, no cientos.
+- ⚠️ Fijar versiones implica actualizarlas a mano de vez en cuando. En la Fase 4 se puede automatizar con Dependabot.
+
+---
+
+## ADR-015: Las migraciones corren en un paso aparte
+
+**Contexto.** Antes de que la API atienda peticiones, la base de datos debe tener sus tablas al día (`flask db upgrade`). Una opción común es correr las migraciones al arrancar la API, dentro del mismo contenedor.
+
+**Decisión.** Las migraciones son un servicio aparte en Docker Compose (`migrate`). Usa la misma imagen que la API, ejecuta `flask db upgrade` y termina. La API solo arranca si ese paso terminó bien (`condition: service_completed_successfully`).
+
+**Consecuencias.**
+- ✅ Si una migración falla, la API no arranca con una base de datos a medias, y el error aparece aislado en `docker compose logs migrate`.
+- ✅ Si un día hay varias copias de la API, las migraciones no corren varias veces al mismo tiempo.
+- ✅ Es el mismo flujo que se usará al desplegar en AWS (Fase 6): primero migrar y después actualizar la API.
+- ⚠️ Es un servicio más en `docker-compose.yml`, y `docker compose ps` no lo muestra porque ya terminó (se ve con `docker compose ps -a`).

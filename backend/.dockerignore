@@ -1,0 +1,25 @@
+# Lo que Docker NO debe copiar al construir la imagen de la API.
+# Así la imagen pesa menos y nunca incluye secretos ni basura local.
+
+# Entorno virtual y cachés de Python
+.venv/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Pruebas: no hacen falta para correr la API
+tests/
+
+# Variables locales (pueden tener contraseñas) y configuración solo de desarrollo
+.env
+.env.*
+.flaskenv
+
+# Archivos de Docker y documentación
+Dockerfile
+.dockerignore
+README.md

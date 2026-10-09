@@ -1,0 +1,79 @@
+# Configuración de Nginx para el frontend en Docker.
+#
+# Es una plantilla: al arrancar el contenedor, ${API_UPSTREAM} y
+# ${NGINX_LOCAL_RESOLVERS} se reemplazan por sus valores y el resultado se guarda
+# en /etc/nginx/conf.d/default.conf. Las variables propias de Nginx (como $uri)
+# no se tocan.
+#
+# Cumple el mismo papel que el proxy de Vite en desarrollo y que CloudFront en
+# AWS: el navegador habla con un solo origen, así que no hace falta CORS
+# (docs/05-decisiones.md, ADR-005).
+
+server {
+    listen 8080;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # No mostrar la versión de Nginx en las páginas de error ni en las cabeceras.
+    server_tokens off;
+
+    # Cabeceras de seguridad en todas las respuestas. Ningún bloque `location` de
+    # abajo usa add_header, porque si lo hiciera, Nginx dejaría de enviar estas.
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Comprime el texto antes de enviarlo (HTML, CSS, JS, JSON y SVG).
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    # Para el healthcheck de Docker. No se registra en el log para no llenarlo.
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # La API: todo lo que empieza con /api/ se reenvía a Gunicorn.
+    location /api/ {
+        # Con la dirección en una variable, Nginx vuelve a buscar la IP de la API
+        # en el DNS de Docker cada 10 s, en lugar de guardar la del arranque. Así
+        # Nginx puede arrancar aunque la API aún no esté lista, y la sigue
+        # encontrando si el contenedor de la API se reinicia con otra IP.
+        resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+        set $api_upstream http://${API_UPSTREAM};
+        proxy_pass $api_upstream;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 5s;
+        # Un poco más que el límite de Gunicorn (30 s), para que sea él quien corte.
+        proxy_read_timeout 35s;
+    }
+
+    # Archivos que genera Vite (index-4f3a2b1c.js): su nombre cambia cuando cambia
+    # su contenido, así que el navegador puede guardarlos un año sin riesgo.
+    location /assets/ {
+        expires 1y;
+        try_files $uri =404;
+    }
+
+    # index.html no se guarda en caché, para que siempre apunte a los archivos
+    # de la versión más nueva.
+    location = /index.html {
+        expires -1;
+    }
+
+    # Las rutas de la app (/stats, /applications/3/edit...) no son archivos:
+    # se responde con index.html y React Router muestra la pantalla que toca.
+    location / {
+        try_files $uri /index.html;
+    }
+}

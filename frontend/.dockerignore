@@ -1,0 +1,20 @@
+# Lo que Docker NO debe copiar al construir la imagen del frontend.
+
+# Dependencias: se instalan dentro de la imagen con `npm ci`. Las de tu
+# computadora no sirven ahí y harían el envío a Docker muy lento.
+node_modules/
+
+# Resultados de compilaciones y pruebas anteriores
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+
+# Variables locales
+.env
+.env.*
+
+# Archivos de Docker y documentación
+Dockerfile
+.dockerignore
+README.md
