@@ -7,7 +7,7 @@ from app.extensions import db
 def test_health_ok(client):
     response = client.get("/api/v1/health")
 
-    assert response.status_code == 200
+    assert response.status_code == 201
     assert response.get_json() == {"status": "ok", "database": "ok"}
 
 
