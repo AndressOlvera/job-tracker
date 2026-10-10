@@ -15,7 +15,7 @@ Cuando una decisión cambie, no se borra: se agrega un ADR nuevo que la reemplaz
 **Consecuencias.**
 - ✅ Un solo lugar para ver el proyecto completo; ideal para un portafolio.
 - ✅ Un cambio que toca API y frontend va en un solo pull request.
-- ⚠️ Los workflows de CI deben filtrar por carpeta para no correr todo en cada cambio (`paths` en GitHub Actions).
+- ⚠️ Los workflows de CI deben filtrar por carpeta para no correr todo en cada cambio (`paths` en GitHub Actions). *Reemplazado por el [ADR-016](#adr-016-la-ci-revisa-todo-en-cada-pull-request).*
 
 ---
 
@@ -228,3 +228,43 @@ Cuando una decisión cambie, no se borra: se agrega un ADR nuevo que la reemplaz
 - ✅ Si un día hay varias copias de la API, las migraciones no corren varias veces al mismo tiempo.
 - ✅ Es el mismo flujo que se usará al desplegar en AWS (Fase 6): primero migrar y después actualizar la API.
 - ⚠️ Es un servicio más en `docker-compose.yml`, y `docker compose ps` no lo muestra porque ya terminó (se ve con `docker compose ps -a`).
+
+---
+
+## ADR-016: La CI revisa todo en cada pull request
+
+**Contexto.** En el ADR-001 se planeó que cada workflow filtrara por carpeta (`paths`), para no correr las pruebas del backend cuando solo cambia el frontend. Pero en la Fase 4 los checks de la CI son **obligatorios** para unir a `main`. Si un workflow no corre por un filtro de carpeta, GitHub se queda esperando ese check para siempre y el pull request no se puede unir.
+
+**Decisión.** Un solo workflow (`.github/workflows/ci.yml`) que en cada pull request corre todos los jobs: Backend, Frontend, E2E y SonarQube. Reemplaza la nota de `paths` del ADR-001.
+
+**Consecuencias.**
+- ✅ Configuración simple, y nunca se queda un check pendiente.
+- ✅ Un cambio en la API también se prueba en el navegador (E2E), y al revés.
+- ⚠️ Cada pull request tarda unos minutos, sobre todo por el job E2E, que construye las imágenes de Docker. En un repositorio público, GitHub Actions no cobra por esos minutos.
+
+---
+
+## ADR-017: Pruebas de navegador contra Docker Compose
+
+**Contexto.** Las pruebas E2E pueden correr contra el modo desarrollo (Vite + `flask run`) o contra las imágenes de Docker.
+
+**Decisión.** En la CI, Playwright prueba la app levantada con `docker compose up -d`: Nginx, Gunicorn y PostgreSQL, igual que en producción. Cada prueba crea sus propios datos con un nombre único y los borra al terminar, aunque falle. El navegador usa la zona horaria `America/Mexico_City`, la misma que la API.
+
+**Consecuencias.**
+- ✅ Si un Dockerfile o la configuración de Nginx se rompen, la CI lo detecta antes de llegar a AWS.
+- ✅ Las pruebas no dependen de los datos de ejemplo, así que también se pueden correr en tu computadora sin borrar nada.
+- ⚠️ Es el job más lento, porque construye las dos imágenes en cada ejecución.
+
+---
+
+## ADR-018: SonarQube Cloud analiza desde la CI y su Quality Gate es obligatorio
+
+**Contexto.** SonarQube Cloud puede analizar el repositorio por su cuenta ("Automatic Analysis") o desde la CI.
+
+**Decisión.** El análisis corre en la CI, después de las pruebas, porque así recibe los reportes de cobertura de pytest y Vitest. El job espera el resultado del Quality Gate (`sonar.qualitygate.wait=true`): si el código nuevo no lo pasa, el job falla y el pull request no se puede unir. Se usa el Quality Gate por defecto ("Sonar way"), que revisa el **código nuevo**: cobertura, duplicación, problemas nuevos y *security hotspots* sin revisar.
+
+**Consecuencias.**
+- ✅ La calidad se mide igual en cada pull request, sin depender de acordarse de revisarla.
+- ✅ Solo se exige al código nuevo, así que el código anterior no bloquea el trabajo.
+- ⚠️ Hay que desactivar "Automatic Analysis" en SonarQube Cloud; si los dos están activos, el análisis de la CI falla.
+- ⚠️ El job necesita el secreto `SONAR_TOKEN`. Sin él, el job solo muestra un aviso y no analiza nada.

@@ -44,19 +44,20 @@ Si la API está apagada, la app muestra "La API no respondió. Revisa que esté 
 
 ## Comandos
 
-| Comando                | Qué hace                                                               |
-| ---------------------- | ---------------------------------------------------------------------- |
-| `npm run dev`          | Servidor de desarrollo con recarga automática                          |
-| `npm test`             | Corre todas las pruebas una vez                                        |
-| `npm run test:watch`   | Corre las pruebas y las repite al guardar cambios                      |
-| `npm run lint`         | Revisa el código con ESLint                                            |
-| `npm run typecheck`    | Revisa los tipos de TypeScript sin compilar                            |
-| `npm run format`       | Da formato a todo con Prettier                                         |
-| `npm run format:check` | Solo revisa el formato (es lo que hará la CI)                          |
-| `npm run build`        | Revisa los tipos y genera la versión de producción en `dist/`          |
-| `npm run preview`      | Sirve la versión de `dist/` para probarla (también con proxy a la API) |
+| Comando                 | Qué hace                                                                      |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| `npm run dev`           | Servidor de desarrollo con recarga automática                                 |
+| `npm test`              | Corre todas las pruebas una vez                                               |
+| `npm run test:watch`    | Corre las pruebas y las repite al guardar cambios                             |
+| `npm run test:coverage` | Corre las pruebas y mide qué parte del código cubren (reporte en `coverage/`) |
+| `npm run lint`          | Revisa el código con ESLint                                                   |
+| `npm run typecheck`     | Revisa los tipos de TypeScript sin compilar                                   |
+| `npm run format`        | Da formato a todo con Prettier                                                |
+| `npm run format:check`  | Solo revisa el formato (es lo que hará la CI)                                 |
+| `npm run build`         | Revisa los tipos y genera la versión de producción en `dist/`                 |
+| `npm run preview`       | Sirve la versión de `dist/` para probarla (también con proxy a la API)        |
 
-Antes de abrir un pull request conviene correr `npm run lint`, `npm run typecheck` y `npm test`. En la Fase 4 la CI los correrá en cada pull request.
+Antes de abrir un pull request conviene correr `npm run lint`, `npm run typecheck` y `npm test`. La CI los corre en cada pull request ([docs/07-ci.md](../docs/07-ci.md)).
 
 ## Pruebas
 
