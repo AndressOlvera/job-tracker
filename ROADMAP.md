@@ -72,17 +72,18 @@ Cada casilla es una **issue** de GitHub. Cópialas al empezar cada fase (no hace
 
 ## Fase 4 · CI y calidad
 
-- [ ] **CI del backend** (GitHub Actions)
+- [x] **CI del backend** (GitHub Actions)
   - Listo cuando: en cada pull request corren ruff y pytest contra un PostgreSQL temporal, y se genera el reporte de cobertura.
-- [ ] **CI del frontend**
+- [x] **CI del frontend**
   - Listo cuando: corren ESLint, la revisión de tipos (`tsc`), Vitest y el build.
-- [ ] **SonarQube Cloud**
+- [x] **SonarQube Cloud**
   - Listo cuando: cada pull request se analiza y el Quality Gate aparece en GitHub.
-- [ ] **Pruebas de navegador con Playwright**
+- [x] **Pruebas de navegador con Playwright**
   - Listo cuando: el flujo crear → editar → filtrar → eliminar corre en CI sobre Docker Compose.
-  - Ojo: el navegador de prueba debe usar la zona horaria `America/Mexico_City` (la misma que `APP_TIMEZONE`). Si usa UTC, de 6 p. m. a medianoche la fecha por defecto del formulario sería "mañana" para la API y la rechazaría.
-- [ ] **Protección de `main` e insignias**
+  - El navegador de prueba usa la zona horaria `America/Mexico_City`, la misma que `APP_TIMEZONE` (ADR-017).
+- [x] **Protección de `main` e insignias**
   - Listo cuando: no se puede unir un pull request con checks fallidos y el README muestra el estado de CI y del Quality Gate.
+  - Guía y configuración en GitHub y SonarQube Cloud: [docs/07-ci.md](docs/07-ci.md). Decisiones: ADR-016 a ADR-018.
 
 ## Fase 5 · Infraestructura en AWS
 

@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import path from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -25,5 +26,17 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     // Restaura `fetch` y cualquier otro global simulado después de cada prueba.
     unstubGlobals: true,
+    // Cobertura: `npm run test:coverage`. La CI la manda a SonarQube Cloud.
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/main.tsx'],
+      reporter: [
+        'text-summary',
+        // Rutas relativas a la raíz del repositorio (frontend/src/...), que es
+        // como SonarQube Cloud las busca.
+        ['lcov', { projectRoot: path.resolve(import.meta.dirname, '..') }],
+      ],
+    },
   },
 })

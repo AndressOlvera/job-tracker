@@ -1,8 +1,12 @@
 # Job Tracker
 
+[![CI](https://github.com/AndressOlvera/job-tracker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AndressOlvera/job-tracker/actions/workflows/ci.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=AndressOlvera_job-tracker&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=AndressOlvera_job-tracker)
+[![Cobertura](https://sonarcloud.io/api/project_badges/measure?project=AndressOlvera_job-tracker&metric=coverage)](https://sonarcloud.io/summary/new_code?id=AndressOlvera_job-tracker)
+
 Aplicación web para registrar y dar seguimiento a postulaciones de empleo y prácticas, con estadísticas para medir la efectividad de la búsqueda.
 
-> 🚧 **En construcción.** La aplicación completa ya corre en Docker; fase actual: **4 · CI y calidad**. Avance en el [roadmap](ROADMAP.md).
+> 🚧 **En construcción.** La app corre en Docker y cada cambio pasa por CI; fase actual: **5 · Infraestructura en AWS**. Avance en el [roadmap](ROADMAP.md).
 
 ## Funcionalidades (MVP)
 
@@ -43,14 +47,15 @@ El navegador habla con un solo dominio: CloudFront entrega el frontend y redirig
 
 ```
 job-tracker/
-├── backend/             # API en Flask (ver su README)
-├── frontend/            # Interfaz en React + TypeScript (ver su README)
-├── e2e/                 # Pruebas de navegador con Playwright
-├── infra/               # Infraestructura en AWS con Terraform
-├── docs/                # Diseño del proyecto
-├── docker/              # Scripts de arranque de la base de datos
-├── docker-compose.yml   # Toda la app en Docker: base de datos, API y frontend
-└── .github/             # Workflows de CI/CD y plantillas
+├── backend/                  # API en Flask (ver su README)
+├── frontend/                 # Interfaz en React + TypeScript (ver su README)
+├── e2e/                      # Pruebas de navegador con Playwright (ver su README)
+├── infra/                    # Infraestructura en AWS con Terraform
+├── docs/                     # Diseño del proyecto
+├── docker/                   # Scripts de arranque de la base de datos
+├── docker-compose.yml        # Toda la app en Docker: base de datos, API y frontend
+├── sonar-project.properties  # Configuración de SonarQube Cloud
+└── .github/                  # Workflow de CI y plantillas
 ```
 
 ## Documentación de diseño
@@ -61,6 +66,7 @@ job-tracker/
 4. [Pantallas](docs/04-pantallas.md)
 5. [Decisiones de diseño (ADR)](docs/05-decisiones.md)
 6. [Docker](docs/06-docker.md)
+7. [Integración continua (CI)](docs/07-ci.md)
 
 ## Cómo correrlo localmente
 

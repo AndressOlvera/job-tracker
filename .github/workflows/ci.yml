@@ -1,0 +1,196 @@
+# Integración continua: revisa cada pull request y cada cambio que llega a main.
+# Si algún job falla, la protección de main no deja unir el pull request.
+# Guía completa: docs/07-ci.md
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Si subes otro commit a un pull request, se cancela la revisión anterior,
+# que ya no sirve. En main se deja terminar siempre.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Permisos mínimos: los jobs solo necesitan leer el código.
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    # PostgreSQL temporal, solo para las pruebas. Se borra al terminar el job.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: jobtracker
+          POSTGRES_PASSWORD: jobtracker
+          POSTGRES_DB: jobtracker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jobtracker -d jobtracker_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://jobtracker:jobtracker@localhost:5432/jobtracker_test
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements-dev.txt
+
+      - name: Revisar errores y estilo (ruff)
+        run: ruff check --output-format=github .
+
+      - name: Revisar formato (ruff format)
+        run: ruff format --check .
+
+      - name: Pruebas (pytest)
+        run: pytest --cov-report=xml
+
+      - name: Guardar la cobertura para SonarQube
+        uses: actions/upload-artifact@v7
+        with:
+          name: cobertura-backend
+          path: backend/coverage.xml
+          if-no-files-found: error
+          retention-days: 7
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Revisar errores y estilo (ESLint)
+        run: npm run lint
+
+      - name: Revisar formato (Prettier)
+        run: npm run format:check
+
+      - name: Revisar tipos (TypeScript)
+        run: npm run typecheck
+
+      - name: Pruebas (Vitest)
+        run: npm run test:coverage
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Guardar la cobertura para SonarQube
+        uses: actions/upload-artifact@v7
+        with:
+          name: cobertura-frontend
+          path: frontend/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 7
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Instalar Playwright
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      # Construye las imágenes y levanta base de datos, migraciones, API y frontend,
+      # igual que en tu computadora.
+      - name: Levantar la app con Docker Compose
+        run: docker compose up -d
+
+      - name: Esperar a que la app responda
+        run: curl --fail --silent --show-error --retry 30 --retry-delay 2 --retry-all-errors http://localhost:8080/api/v1/health
+
+      - name: Pruebas de navegador (Playwright)
+        working-directory: e2e
+        run: npx playwright test
+
+      - name: Mostrar los logs de los contenedores
+        if: failure()
+        run: docker compose logs
+
+      # El reporte incluye capturas y el "trace" de las pruebas que fallaron.
+      - name: Guardar el reporte de Playwright
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: reporte-playwright
+          path: e2e/playwright-report/
+          retention-days: 7
+
+  sonarqube:
+    name: SonarQube
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Los pull requests que vienen de un fork no reciben secretos, así que no se analizan.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Historial completo: SonarQube lo usa para saber qué código es nuevo.
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: cobertura-backend
+          path: backend
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: cobertura-frontend
+          path: frontend/coverage
+
+      - name: Análisis de SonarQube Cloud
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@v8
+        with:
+          # Espera el resultado del Quality Gate: si no lo pasa, este job falla.
+          args: -Dsonar.qualitygate.wait=true
+
+      - name: Avisar si falta el token
+        if: env.SONAR_TOKEN == ''
+        run: echo "::warning::Falta el secreto SONAR_TOKEN, así que no se hizo el análisis. Ver docs/07-ci.md."
