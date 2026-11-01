@@ -7,10 +7,15 @@
 # Vive aquí, y no en infra/, para que siga existiendo aunque la infraestructura
 # de la app se destruya: así el workflow puede ver que está apagada y avisar.
 
+# Repositorio que puede desplegar, como lo nombra GitHub en el token OIDC:
+# <dueño>@<id>/<repositorio>@<id>. Los ID no cambian aunque se renombre la
+# cuenta o el repositorio. Se consultan en:
+#   https://api.github.com/repos/AndressOlvera/job-tracker (owner.id e id)
 variable "github_repository" {
-  description = "Repositorio de GitHub que puede desplegar (dueño/nombre)"
+  description = "Repositorio que puede desplegar, con sus ID (dueño@id/repo@id)"
   type        = string
-  default     = "AndressOlvera/job-tracker"
+  default     = "AndressOlvera@295995116/job-tracker@1405888082"
+  
 }
 
 locals {
