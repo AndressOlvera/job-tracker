@@ -1,0 +1,203 @@
+# Despliegue continuo: publica en AWS cada cambio que llega a main.
+#
+# Corre solo cuando la CI termina bien en main. También se puede correr a mano
+# desde la pestaña Actions (Deploy → Run workflow), por ejemplo después de volver
+# a crear la infraestructura con `terraform apply`.
+# Guía completa: docs/09-despliegue.md
+
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# Un despliegue a la vez. Si llega otro mientras corre uno, espera su turno.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # Para pedirle a GitHub el token OIDC que revisa AWS (ADR-023).
+
+env:
+  AWS_REGION: us-east-1
+  # El commit que se despliega: el que revisó la CI, o el último de main si es a mano.
+  COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+jobs:
+  infra:
+    name: Revisar la infraestructura
+    # Solo si la CI pasó en un push a main (no en un pull request), o a mano desde main.
+    if: >-
+      (github.event_name == 'workflow_run'
+        && github.event.workflow_run.conclusion == 'success'
+        && github.event.workflow_run.event == 'push')
+      || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      activa: ${{ steps.revisar.outputs.activa }}
+    steps:
+      - name: Avisar si falta configurar el rol
+        if: vars.AWS_DEPLOY_ROLE_ARN == ''
+        run: echo "::warning::Falta la variable AWS_DEPLOY_ROLE_ARN, así que no se desplegó nada. Ver docs/09-despliegue.md."
+
+      - name: Conectarse a AWS con OIDC
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: true
+
+      # infra/deploy.tf guarda los datos del despliegue en SSM. Si no existen,
+      # la infraestructura está apagada (terraform destroy) y no hay a dónde desplegar.
+      - name: Ver si la infraestructura está encendida
+        id: revisar
+        if: vars.AWS_DEPLOY_ROLE_ARN != ''
+        run: |
+          total=$(aws ssm get-parameters-by-path --path /job-tracker/deploy \
+            --query 'length(Parameters)' --output text)
+          if [ "$total" -gt 0 ]; then
+            echo "activa=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::La infraestructura de AWS está apagada, así que no se desplegó nada. Levántala con terraform apply y corre este workflow a mano."
+            echo "activa=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  desplegar:
+    name: Desplegar
+    needs: infra
+    if: needs.infra.outputs.activa == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.COMMIT }}
+
+      - name: Conectarse a AWS con OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: true
+
+      # Cada parámetro /job-tracker/deploy/<nombre> se vuelve la variable <NOMBRE>:
+      # ECR_REPOSITORY, INSTANCE_ID, FRONTEND_BUCKET, CLOUDFRONT_DISTRIBUTION_ID y APP_URL.
+      - name: Leer los datos de la infraestructura
+        run: |
+          aws ssm get-parameters-by-path --path /job-tracker/deploy \
+            --query 'Parameters[].[Name,Value]' --output text |
+            while IFS=$'\t' read -r name value; do
+              key="${name##*/}"
+              echo "${key^^}=$value"
+            done >> "$GITHUB_ENV"
+
+      # ---------- API ----------
+
+      # La imagen lleva dos etiquetas: el commit (para saber qué versión corre y
+      # poder regresar a ella) y "latest" (la que usa la instancia al arrancar).
+      - name: Construir y subir la imagen de la API a ECR
+        run: |
+          aws ecr get-login-password | docker login --username AWS --password-stdin "${ECR_REPOSITORY%%/*}"
+          docker build -t "$ECR_REPOSITORY:$COMMIT" -t "$ECR_REPOSITORY:latest" backend
+          docker push --all-tags "$ECR_REPOSITORY"
+
+      # Corre job-tracker-deploy en la instancia con SSM Run Command, sin SSH:
+      # descarga la imagen, aplica las migraciones y reemplaza el contenedor.
+      - name: Desplegar la API en EC2 (con migraciones)
+        run: |
+          # 1. Mandar la orden. Si la instancia se acaba de crear, puede tardar un
+          #    par de minutos en aparecer en SSM, así que se reintenta.
+          command_id=""
+          for intento in $(seq 1 12); do
+            if command_id=$(aws ssm send-command \
+                --instance-ids "$INSTANCE_ID" \
+                --document-name AWS-RunShellScript \
+                --comment "Deploy ${COMMIT:0:7}" \
+                --parameters "commands=[\"/usr/local/bin/job-tracker-deploy $COMMIT\"]" \
+                --query Command.CommandId --output text 2>error.txt); then
+              break
+            fi
+            if ! grep -q InvalidInstanceId error.txt; then
+              cat error.txt
+              exit 1
+            fi
+            echo "La instancia todavía no aparece en SSM (intento $intento de 12). Reintentando en 15 s..."
+            command_id=""
+            sleep 15
+          done
+          if [ -z "$command_id" ]; then
+            echo "::error::La instancia no se registró en SSM."
+            exit 1
+          fi
+
+          # 2. Esperar a que termine (máximo 10 minutos).
+          status=Pending
+          for _ in $(seq 1 120); do
+            status=$(aws ssm get-command-invocation --command-id "$command_id" \
+              --instance-id "$INSTANCE_ID" --query Status --output text 2>/dev/null || echo Pending)
+            case "$status" in
+              Pending | InProgress | Delayed) sleep 5 ;;
+              *) break ;;
+            esac
+          done
+
+          # 3. Mostrar lo que pasó en la instancia.
+          aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+            --query StandardOutputContent --output text
+          if [ "$status" != Success ]; then
+            aws ssm get-command-invocation --command-id "$command_id" --instance-id "$INSTANCE_ID" \
+              --query StandardErrorContent --output text
+            echo "::error::El despliegue de la API terminó con estado $status."
+            exit 1
+          fi
+
+      # ---------- Frontend ----------
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Compilar el frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Subir el frontend a S3 y limpiar la caché de CloudFront
+        working-directory: frontend
+        run: |
+          # Los archivos de assets/ cambian de nombre en cada versión: caché de un año.
+          aws s3 sync dist/assets "s3://$FRONTEND_BUCKET/assets" \
+            --cache-control "public, max-age=31536000, immutable"
+          # index.html y lo demás sin caché, para que siempre apunten a la versión nueva.
+          aws s3 sync dist "s3://$FRONTEND_BUCKET" --exclude "assets/*" --delete \
+            --cache-control "no-cache"
+          aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths "/*" --query Invalidation.Id --output text
+
+      # ---------- Prueba final ----------
+
+      - name: Revisar que la app responda
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-delay 5 --retry-all-errors \
+            "$APP_URL/api/v1/health"
+          echo
+          curl --fail --silent --show-error --output /dev/null "$APP_URL/"
+          echo "La app responde en $APP_URL"
+
+      - name: Resumen
+        run: |
+          {
+            echo "### Desplegado"
+            echo "- Commit: \`${COMMIT:0:7}\`"
+            echo "- App: $APP_URL"
+          } >> "$GITHUB_STEP_SUMMARY"

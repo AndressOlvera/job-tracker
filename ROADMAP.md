@@ -105,14 +105,16 @@ Cada casilla es una **issue** de GitHub. Cópialas al empezar cada fase (no hace
 
 ## Fase 6 · Despliegue automático
 
-- [ ] **Conexión OIDC entre GitHub y AWS**
+- [x] **Conexión OIDC entre GitHub y AWS**
   - Listo cuando: Terraform crea el proveedor OIDC y un rol que solo puede asumir este repositorio desde `main`.
-- [ ] **Despliegue de la API**
+  - Viven en `infra/bootstrap` para que no se borren con `terraform destroy` (ADR-023).
+- [x] **Despliegue de la API**
   - Listo cuando: al unir a `main` se construye la imagen, se sube a ECR, se actualiza EC2 y se aplican las migraciones.
-- [ ] **Despliegue del frontend**
+- [x] **Despliegue del frontend**
   - Listo cuando: al unir a `main` se compila, se sube a S3 y se invalida la caché de CloudFront.
-- [ ] **Prueba posterior al despliegue**
+- [x] **Prueba posterior al despliegue**
   - Listo cuando: el workflow verifica `GET /api/v1/health` y falla si no responde.
+  - Guía: [docs/09-despliegue.md](docs/09-despliegue.md). Decisiones: ADR-023 y ADR-024.
 
 ## Fase 7 · Pulido para el CV
 

@@ -25,12 +25,14 @@ flowchart LR
 | Archivo | Qué crea o hace |
 |---|---|
 | `infra/bootstrap/main.tf` | El bucket de S3 donde Terraform guarda su estado. Se crea una sola vez |
+| `infra/bootstrap/github.tf` | La conexión de GitHub Actions con AWS (OIDC) para el despliegue automático. También se crea una sola vez ([docs/09-despliegue.md](09-despliegue.md)) |
 | `infra/main.tf` | Versiones, dónde se guarda el estado y valores generales (región, tamaños) |
 | `infra/network.tf` | VPC, 2 subredes públicas, 2 privadas (sin NAT Gateway) y los security groups |
 | `infra/database.tf` | La contraseña en SSM Parameter Store y RDS PostgreSQL |
 | `infra/api.tf` | El repositorio de ECR, el rol de IAM de la instancia y la instancia EC2 |
 | `infra/frontend.tf` | El bucket del frontend y CloudFront, con sus rutas y cabeceras de seguridad |
 | `infra/outputs.tf` | Los datos que se usan al desplegar: URL, bucket, ID de la instancia… |
+| `infra/deploy.tf` | Esos mismos datos, guardados en SSM para que los lea el despliegue automático |
 | `infra/scripts/user-data.sh.tftpl` | Lo que hace la instancia al crearse: instala Docker y el script de despliegue |
 | `infra/scripts/job-tracker-deploy.sh` | El despliegue de la API: descarga la imagen, migra y reemplaza el contenedor |
 | `infra/scripts/spa-routes.js` | Manda las rutas de React (`/stats`…) a `index.html` |
@@ -116,13 +118,15 @@ cd ~/proyectos/job-tracker/infra
 # Solo la primera vez: conecta Terraform con el bucket del estado
 terraform init -backend-config="bucket=job-tracker-tfstate-$(aws sts get-caller-identity --query Account --output text)"
 
-terraform plan                # muestra lo que va a crear (32 recursos)
+terraform plan                # muestra lo que va a crear (37 recursos)
 terraform apply               # escribe yes; tarda unos 15 minutos
 ```
 
-RDS y CloudFront son los más lentos. Al terminar, Terraform muestra los `outputs`, entre ellos `app_url`. Si abres la URL ahora verás un error `AccessDenied`: la infraestructura ya existe, pero falta subir la app, que es el siguiente paso.
+RDS y CloudFront son los más lentos. Al terminar, Terraform muestra los `outputs`, entre ellos `app_url`. Si abres la URL ahora verás un error `AccessDenied`: la infraestructura ya existe, pero falta desplegar la app.
 
-## Primer despliegue
+Desde la Fase 6 eso lo hace GitHub Actions: en GitHub ve a **Actions → Deploy → Run workflow** y elige `main` ([docs/09-despliegue.md](09-despliegue.md)). Los pasos de la siguiente sección son el mismo despliegue hecho a mano, por si lo necesitas.
+
+## Desplegar a mano
 
 Necesitas Docker Desktop abierto. Desde la raíz del proyecto, guarda los datos que da Terraform en variables de la terminal:
 
@@ -209,7 +213,7 @@ terraform -chdir=infra destroy   # escribe yes; tarda unos 15 minutos
 
 Se borra todo menos el bucket del estado: la base de datos con sus datos, las imágenes de ECR y los archivos del frontend.
 
-Para volver a levantarla, corre `terraform -chdir=infra apply` y repite el [primer despliegue](#primer-despliegue). La URL de CloudFront cambia cada vez que se vuelve a crear.
+Para volver a levantarla, corre `terraform -chdir=infra apply` y luego, en GitHub, **Actions → Deploy → Run workflow** (o [despliega a mano](#desplegar-a-mano)). La URL de CloudFront cambia cada vez que se vuelve a crear.
 
 ## Entrar a la instancia
 
@@ -231,6 +235,7 @@ No hay SSH. En la consola de AWS ve a **EC2 → Instances**, selecciona `job-tra
 | Terraform o la AWS CLI fallan con un error de credenciales o de `credential_process` | Venció la sesión de 12 horas. Corre otra vez `aws login --remote --profile job-tracker-login`. |
 | `terraform init` dice que el bucket no existe | Falta [crear el bucket del estado](#3-crear-el-bucket-del-estado), o estás en otra cuenta (revisa `aws sts get-caller-identity`). |
 | `send-command` responde `InvalidInstanceId` | La instancia acaba de crearse y todavía no se registra en SSM. Espera uno o dos minutos. |
+| `docker login` falla con `error storing credentials` y el mensaje "El fragmento ha recibido datos incorrectos" | Docker Desktop guarda los inicios de sesión en Windows, que rechaza la contraseña de ECR por ser muy larga. Quita esa opción con `python3 -c 'import json,pathlib; p=pathlib.Path.home()/".docker/config.json"; c=json.loads(p.read_text()); c.pop("credsStore",None); p.write_text(json.dumps(c,indent=2))'` y vuelve a hacer el login. Docker Desktop la vuelve a poner al reiniciarse. |
 | El despliegue falla en `docker pull` con `not found` | Falta [subir la imagen a ECR](#1-subir-la-imagen-de-la-api-a-ecr). |
 | La página muestra `AccessDenied` | Falta [subir el frontend](#3-subir-el-frontend), o la invalidación aún no termina (tarda un par de minutos). |
 | La app dice "La API no respondió" | La API no está corriendo. Entra a la instancia y revisa `sudo docker logs job-tracker-api`, o repite el [paso 2](#2-arrancar-la-api-en-ec2). |

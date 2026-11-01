@@ -1,15 +1,14 @@
-# Bucket de S3 donde Terraform guarda el estado de la infraestructura (infra/).
-#
-# Se crea UNA sola vez y no se destruye con el resto, porque ahí vive la
-# "memoria" de Terraform: qué recursos creó y cómo se llaman en AWS.
+# Lo que se crea UNA sola vez y no se destruye con el resto de infra/:
+#   - main.tf:   el bucket de S3 donde Terraform guarda el estado de infra/.
+#   - github.tf: la conexión de GitHub Actions con AWS (OIDC) para desplegar.
 #
 #   cd infra/bootstrap
 #   terraform init
 #   terraform apply
 #
 # El estado de esta carpeta se queda en tu computadora (terraform.tfstate, que
-# no se sube a Git). Si se pierde no pasa nada: el bucket sigue existiendo.
-# Guía completa: docs/08-aws.md
+# no se sube a Git). Si se pierde, lo creado sigue existiendo en AWS.
+# Guías: docs/08-aws.md y docs/09-despliegue.md
 
 terraform {
   required_version = ">= 1.11"

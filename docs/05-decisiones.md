@@ -332,3 +332,40 @@ Cuando una decisión cambie, no se borra: se agrega un ADR nuevo que la reemplaz
 - ✅ No hay llaves permanentes guardadas en la computadora.
 - ⚠️ Hay que volver a iniciar sesión cada 12 horas.
 - ⚠️ Requiere AWS CLI 2.32 o más nueva.
+
+---
+
+## ADR-023: GitHub Actions entra a AWS con OIDC
+
+**Contexto.** El despliegue automático necesita permisos en AWS. Lo más común es crear llaves de acceso de un usuario de IAM y guardarlas como secretos en GitHub, pero son permanentes: si se filtran, sirven hasta que alguien las borre.
+
+**Decisión.**
+- Se usa **OIDC**. En cada ejecución, GitHub le da al workflow un token firmado que dice de qué repositorio y rama viene. AWS lo revisa y entrega credenciales temporales (1 hora) del rol `job-tracker-github-deploy`.
+- Solo este repositorio, desde `main`, puede usar el rol.
+- El rol tiene los permisos mínimos para desplegar: leer los datos del despliegue en SSM, subir la imagen a su repositorio de ECR, mandar comandos solo a la instancia con la etiqueta `Name=job-tracker-api`, subir archivos al bucket del frontend e invalidar la caché de CloudFront.
+- El proveedor OIDC y el rol viven en `infra/bootstrap`, no en `infra/`, para que sigan existiendo cuando la infraestructura de la app se destruye.
+
+**Consecuencias.**
+- ✅ No hay llaves de AWS guardadas en GitHub.
+- ✅ Un pull request, incluso desde un fork, no puede desplegar ni tocar AWS.
+- ⚠️ Como el rol existe aunque la infraestructura no, sus permisos usan nombres escritos a mano (`job-tracker-api`, `job-tracker-web-*`) en lugar de referencias de Terraform. Si un nombre cambia en `infra/`, también hay que cambiarlo en `infra/bootstrap/github.tf`.
+- ⚠️ El estado de `infra/bootstrap` sigue en tu computadora.
+
+---
+
+## ADR-024: El despliegue corre después de la CI y respeta la infraestructura apagada
+
+**Contexto.** Al unir a `main`, el cambio debe publicarse solo, pero únicamente si pasa las pruebas. Además, la infraestructura no siempre está encendida ([ADR-007](#adr-007-infraestructura-como-código-y-destruible)).
+
+**Decisión.**
+- Un workflow aparte, `deploy.yml`, que arranca cuando la CI termina bien en `main` (`workflow_run`), o a mano con **Run workflow**.
+- Primero busca en SSM los datos de la infraestructura (`infra/deploy.tf`). Si no existen, avisa y termina sin error.
+- Orden: la API (imagen con la etiqueta del commit y migraciones con el script de la Fase 5), después el frontend (S3 e invalidación de la caché) y al final una prueba de salud a través de CloudFront.
+- Un solo despliegue a la vez.
+
+**Consecuencias.**
+- ✅ Nada llega a AWS sin haber pasado la CI en `main`.
+- ✅ Unir con la infraestructura apagada no deja errores en rojo; para publicar después basta con **Run workflow**.
+- ✅ Cada imagen lleva la etiqueta de su commit, así que se sabe qué versión corre. Para regresar a una anterior basta con volver a correr su despliegue.
+- ⚠️ La API se actualiza antes que el frontend. Un cambio que rompa la compatibilidad entre los dos tendría que hacerse en dos pasos.
+- ⚠️ Cada unión a `main` despliega, aunque solo cambie la documentación.

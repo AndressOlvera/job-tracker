@@ -6,7 +6,7 @@
 
 Aplicación web para registrar y dar seguimiento a postulaciones de empleo y prácticas, con estadísticas para medir la efectividad de la búsqueda.
 
-> 🚧 **En construcción.** La app corre en Docker, cada cambio pasa por CI y la infraestructura de AWS está en Terraform; fase actual: **6 · Despliegue automático**. Avance en el [roadmap](ROADMAP.md).
+> 🚧 **En construcción.** La app corre en Docker, cada cambio pasa por CI y, al unirse a `main`, se despliega solo en AWS; fase actual: **7 · Pulido para el CV**. Avance en el [roadmap](ROADMAP.md).
 
 ## Funcionalidades (MVP)
 
@@ -28,7 +28,7 @@ Aplicación web para registrar y dar seguimiento a postulaciones de empleo y pr�
 | CI/CD | GitHub Actions (OIDC hacia AWS) |
 | Infraestructura | Terraform, AWS (CloudFront, S3, EC2, RDS, ECR, SSM) |
 
-## Arquitectura planeada
+## Arquitectura
 
 ```mermaid
 flowchart LR
@@ -55,7 +55,7 @@ job-tracker/
 ├── docker/                   # Scripts de arranque de la base de datos
 ├── docker-compose.yml        # Toda la app en Docker: base de datos, API y frontend
 ├── sonar-project.properties  # Configuración de SonarQube Cloud
-└── .github/                  # Workflow de CI y plantillas
+└── .github/                  # Workflows de CI y despliegue, y plantillas
 ```
 
 ## Documentación de diseño
@@ -68,6 +68,7 @@ job-tracker/
 6. [Docker](docs/06-docker.md)
 7. [Integración continua (CI)](docs/07-ci.md)
 8. [Infraestructura en AWS](docs/08-aws.md)
+9. [Despliegue automático (CD)](docs/09-despliegue.md)
 
 ## Cómo correrlo localmente
 
