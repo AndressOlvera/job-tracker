@@ -6,7 +6,7 @@
 
 Aplicación web para registrar y dar seguimiento a postulaciones de empleo y prácticas, con estadísticas para medir la efectividad de la búsqueda.
 
-> 🚧 **En construcción.** La app corre en Docker y cada cambio pasa por CI; fase actual: **5 · Infraestructura en AWS**. Avance en el [roadmap](ROADMAP.md).
+> 🚧 **En construcción.** La app corre en Docker, cada cambio pasa por CI y la infraestructura de AWS está en Terraform; fase actual: **6 · Despliegue automático**. Avance en el [roadmap](ROADMAP.md).
 
 ## Funcionalidades (MVP)
 
@@ -50,7 +50,7 @@ job-tracker/
 ├── backend/                  # API en Flask (ver su README)
 ├── frontend/                 # Interfaz en React + TypeScript (ver su README)
 ├── e2e/                      # Pruebas de navegador con Playwright (ver su README)
-├── infra/                    # Infraestructura en AWS con Terraform
+├── infra/                    # Infraestructura en AWS con Terraform (ver su README)
 ├── docs/                     # Diseño del proyecto
 ├── docker/                   # Scripts de arranque de la base de datos
 ├── docker-compose.yml        # Toda la app en Docker: base de datos, API y frontend
@@ -67,6 +67,7 @@ job-tracker/
 5. [Decisiones de diseño (ADR)](docs/05-decisiones.md)
 6. [Docker](docs/06-docker.md)
 7. [Integración continua (CI)](docs/07-ci.md)
+8. [Infraestructura en AWS](docs/08-aws.md)
 
 ## Cómo correrlo localmente
 

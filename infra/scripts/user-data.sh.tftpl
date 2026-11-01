@@ -1,0 +1,28 @@
+#!/bin/bash
+# Prepara la instancia EC2 de la API. Lo ejecuta cloud-init una sola vez, al
+# crear la instancia. Es una plantilla: Terraform llena los valores (api.tf).
+# Para ver qué pasó, en la instancia: sudo cat /var/log/cloud-init-output.log
+set -euo pipefail
+
+# 1. Docker
+dnf install -y docker
+systemctl enable --now docker
+
+# 2. Configuración del despliegue (no incluye secretos)
+mkdir -p /etc/job-tracker
+cat >/etc/job-tracker/deploy.conf <<'CONFIG'
+%{ for key, value in deploy_config ~}
+${key}="${value}"
+%{ endfor ~}
+CONFIG
+
+# 3. Script de despliegue (infra/scripts/job-tracker-deploy.sh)
+cat >/usr/local/bin/job-tracker-deploy <<'DEPLOY_SCRIPT'
+${deploy_script}
+DEPLOY_SCRIPT
+chmod 755 /usr/local/bin/job-tracker-deploy
+
+# 4. Si ya hay una imagen de la API en ECR (por ejemplo, porque la instancia se
+#    volvió a crear), la API arranca sola. La primera vez todavía no hay imagen.
+/usr/local/bin/job-tracker-deploy ||
+  echo "Aun no hay imagen de la API en ECR: falta el primer despliegue (docs/08-aws.md)."
