@@ -83,7 +83,7 @@ Al abrir la lista de postulaciones en `http://localhost:8080`:
 3. Nginx ve que la ruta empieza con `/api/` y la reenvía al servicio `api`. Dentro de la red de Docker, cada servicio se encuentra por su nombre, como si fuera el nombre de una computadora.
 4. **Gunicorn** pasa la petición a uno de sus procesos de Flask, que consulta a `db` y responde JSON.
 
-En AWS (Fase 5), CloudFront hará el papel de Nginx y la base será RDS, pero la imagen de la API será la misma.
+En AWS, CloudFront hace el papel de Nginx y la base es RDS, pero la imagen de la API es la misma ([docs/08-aws.md](08-aws.md)).
 
 ## Qué hace cada archivo
 

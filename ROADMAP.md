@@ -87,19 +87,21 @@ Cada casilla es una **issue** de GitHub. Cópialas al empezar cada fase (no hace
 
 ## Fase 5 · Infraestructura en AWS
 
-- [ ] **Estado remoto de Terraform**
+- [x] **Estado remoto de Terraform**
   - Listo cuando: el bucket de S3 para el estado existe (creado una sola vez) y `infra/` lo usa con bloqueo.
-- [ ] **Red**
+- [x] **Red**
   - Listo cuando: existe la VPC con subredes públicas y privadas, sin NAT Gateway.
-- [ ] **Registro de imágenes (ECR)**
-- [ ] **Base de datos (RDS PostgreSQL)**
+- [x] **Registro de imágenes (ECR)**
+- [x] **Base de datos (RDS PostgreSQL)**
   - Listo cuando: RDS está en subredes privadas y su contraseña se guarda en SSM Parameter Store.
-- [ ] **Servidor de la API (EC2)**
+  - La contraseña tampoco queda en el estado de Terraform (ADR-019).
+- [x] **Servidor de la API (EC2)**
   - Listo cuando: la instancia tiene un rol IAM para leer de ECR y SSM, instala Docker al arrancar y se administra con Session Manager, sin SSH.
-- [ ] **Frontend (S3 + CloudFront)**
+- [x] **Frontend (S3 + CloudFront)**
   - Listo cuando: CloudFront sirve el frontend desde un bucket privado y redirige `/api/*` a EC2 sin caché.
-- [ ] **Primer despliegue manual**
+- [x] **Primer despliegue manual**
   - Listo cuando: la app funciona desde la URL de CloudFront y el procedimiento para levantar y destruir todo está documentado.
+  - Guía: [docs/08-aws.md](docs/08-aws.md). Decisiones: ADR-019 a ADR-022.
 
 ## Fase 6 · Despliegue automático
 

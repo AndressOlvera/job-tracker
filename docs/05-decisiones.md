@@ -268,3 +268,67 @@ Cuando una decisión cambie, no se borra: se agrega un ADR nuevo que la reemplaz
 - ✅ Solo se exige al código nuevo, así que el código anterior no bloquea el trabajo.
 - ⚠️ Hay que desactivar "Automatic Analysis" en SonarQube Cloud; si los dos están activos, el análisis de la CI falla.
 - ⚠️ El job necesita el secreto `SONAR_TOKEN`. Sin él, el job solo muestra un aviso y no analiza nada.
+
+---
+
+## ADR-019: La contraseña de la base de datos no pasa por el estado de Terraform
+
+**Contexto.** RDS necesita una contraseña al crearse. Si Terraform la genera con un recurso normal (`random_password`) o la recibe en una variable, queda escrita en texto plano en el estado de Terraform, y cualquiera con acceso al bucket del estado la podría leer.
+
+**Decisión.**
+- La contraseña se genera con un recurso `ephemeral`, que solo existe mientras corre `terraform apply`.
+- Se guarda en **SSM Parameter Store** como `SecureString` (cifrada), a través de un argumento *write-only* (`value_wo`), que Terraform envía pero no guarda.
+- RDS la recibe leyéndola de SSM, también por un argumento *write-only* (`password_wo`).
+- La instancia EC2 la lee de SSM al desplegar. Su rol de IAM solo puede leer ese parámetro.
+
+**Consecuencias.**
+- ✅ La contraseña no está en el código, ni en Git, ni en el estado de Terraform. Solo en SSM, cifrada.
+- ✅ Para cambiarla basta con subir `value_wo_version` en `infra/database.tf` y correr `terraform apply`.
+- ⚠️ Requiere Terraform 1.11 o más nueva.
+- ⚠️ Terraform no detecta si alguien cambia la contraseña a mano en RDS, porque no la guarda para compararla.
+
+---
+
+## ADR-020: La instancia EC2 se prepara sola y se despliega con un script
+
+**Contexto.** La API corre como contenedor en EC2 ([ADR-006](#adr-006-api-en-ec2-con-docker)). Hace falta instalar Docker, saber qué imagen correr y con qué variables, y poder actualizarla sin entrar por SSH.
+
+**Decisión.**
+- Al crearse, la instancia ejecuta su *user data* (`infra/scripts/user-data.sh.tftpl`): instala Docker y deja el script `job-tracker-deploy` con su configuración, que no incluye secretos.
+- El script descarga la imagen de ECR, lee la contraseña de SSM, aplica las migraciones, reemplaza el contenedor y revisa que `GET /api/v1/health` responda.
+- El script se ejecuta desde fuera con **SSM Run Command** (`aws ssm send-command`). En la Fase 6, GitHub Actions lo llamará de la misma forma.
+- La instancia solo acepta IMDSv2 y con un solo salto de red, así que los contenedores no pueden obtener las credenciales de su rol.
+
+**Consecuencias.**
+- ✅ No hay SSH ni llaves `.pem`: el puerto 22 está cerrado.
+- ✅ Si la instancia se vuelve a crear, la API arranca sola con la última imagen de ECR.
+- ⚠️ Mientras se reemplaza el contenedor, la API deja de responder unos segundos.
+- ⚠️ Si cambia el *user data* o el script, Terraform crea una instancia nueva.
+
+---
+
+## ADR-021: CloudFront hace en AWS lo que Nginx hace en Docker
+
+**Contexto.** En Docker, Nginx entrega el frontend, responde `index.html` en las rutas de React, agrega cabeceras de seguridad y reenvía `/api`. En AWS el frontend está en S3, que no hace nada de eso.
+
+**Decisión.**
+- **Rutas de React:** una CloudFront Function (`infra/scripts/spa-routes.js`) cambia a `/index.html` toda ruta que no tenga extensión. No se usan las páginas de error de CloudFront (convertir los `403`/`404` en `index.html`), porque aplican a toda la distribución: un `404` de la API llegaría al navegador como una página HTML con código `200`.
+- **Cabeceras:** una *response headers policy* con la misma CSP de Nginx, más HSTS, porque en AWS el sitio siempre va por HTTPS.
+- **Caché:** los archivos de `assets/` se suben con caché de un año, y `index.html` y lo demás sin caché, igual que en Nginx. Después de cada despliegue se invalida la caché de CloudFront. `/api/*` nunca se guarda en caché.
+
+**Consecuencias.**
+- ✅ La app se comporta igual en Docker y en AWS.
+- ⚠️ Un archivo que no existe (por ejemplo `/logo.png`) responde con el error `403` de S3, no con la pantalla de "página no encontrada" de la app.
+
+---
+
+## ADR-022: Credenciales temporales en la computadora (`aws login`)
+
+**Contexto.** Terraform y la AWS CLI necesitan credenciales de AWS en la computadora. Lo más común son las llaves de acceso (*access keys*) de un usuario de IAM, pero son permanentes: si se filtran, sirven hasta que alguien las borre.
+
+**Decisión.** Se usa `aws login`, que da credenciales temporales (hasta 12 horas) a partir del inicio de sesión de la consola. Terraform todavía no las lee directo, así que un perfil con `credential_process` se las pasa a través de la AWS CLI.
+
+**Consecuencias.**
+- ✅ No hay llaves permanentes guardadas en la computadora.
+- ⚠️ Hay que volver a iniciar sesión cada 12 horas.
+- ⚠️ Requiere AWS CLI 2.32 o más nueva.
