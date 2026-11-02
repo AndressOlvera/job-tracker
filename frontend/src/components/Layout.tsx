@@ -15,7 +15,7 @@ export function Layout() {
         <div className={styles.bar}>
           <Link to="/" className={styles.brand}>
             <span className={styles.mark} aria-hidden="true" />
-            Job Tracker
+            Job Tracker (demo)
           </Link>
           <nav aria-label="Principal">
             <ul className={styles.nav}>
