@@ -118,10 +118,12 @@ Cada casilla es una **issue** de GitHub. Cópialas al empezar cada fase (no hace
 
 ## Fase 7 · Pulido para el CV
 
-- [ ] **README final**
+- [x] **README final**
   - Listo cuando: incluye capturas o GIF, diagrama de arquitectura, cómo correrlo, tecnologías y decisiones.
-- [ ] **Video de demostración**
-- [ ] **Descripción del proyecto para el CV**
+- [x] **Video de demostración**
+  - Video de 1 minuto en [docs/media/job-tracker-demo.mp4](docs/media/job-tracker-demo.mp4) y GIF en el README, para mostrar la app aunque la infraestructura esté apagada.
+- [x] **Descripción del proyecto para el CV**
+  - Va en el CV, no en el repositorio.
 
 ## Después del MVP (opcionales)
 
