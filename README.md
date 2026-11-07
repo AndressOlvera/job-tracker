@@ -11,7 +11,7 @@ Es un proyecto full stack de principio a fin: frontend en React, API en Flask, P
 
 ![Crear una postulación y cambiar su estado](docs/media/demo.gif)
 
-🎬 [Video completo de 1 minuto](docs/media/job-tracker-demo.mp4)
+[Video completo de 1 minuto](docs/media/job-tracker-demo.mp4)
 
 ## Qué hace
 
